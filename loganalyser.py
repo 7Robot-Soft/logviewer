@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-import sys
+import locale, sys
+
+# sinon, une fois dans pyQT, May n'est plus parsé par strptime
+
 
 def minima(items):
     '''Renvoie les indexs des minima d'une liste'''
@@ -28,19 +31,26 @@ def lineParser(line):
     mesg = " ".join(linec[3:])
     return LogEntry(date, mesg)
     
+     
 
 class LogAnalyser:
     def __init__(self, filesList):
         self.files = filesList
         self.logs = ["" for _ in range(len(filesList))]
         
+        # condition de terminaison == tous les fichiers sont lus
+        self.termination = [f.currentEntry.mesg == None for f in self.files].count(False)
         
     def analyse(self):
-        # condition de terminaison == tous les fichiers sont lus
-        termination = [f.currentEntry.mesg == None for f in self.files].count(False)
-
-            
-        while termination > 0:
+        locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))
+        while self.termination > 0:
+            logs = self.analyseStep()
+            for i in range(len(self.logs)):
+                self.logs[i] += logs[i]
+        
+    def analyseStep(self):  
+        logs = ["" for _ in range(len(self.files))]
+        if self.termination > 0:
             ditems = [f.currentEntry.date for f in self.files]
             # on pick up les entrées qui ont les dates les plus anciennes
             nexts = minima(ditems)
@@ -48,13 +58,14 @@ class LogAnalyser:
             for i in range(len(self.files)):
                 if i in nexts:
                     # Dates anciennes : on les ajoute
-                    self.logs[i] += self.files[i].currentEntry.__str__() + "\n"
+                    logs[i] += self.files[i].currentEntry.__str__() + "\n"
                     self.files[i].readNext()
                     if self.files[i].currentEntry.mesg == None:
-                        termination -= 1        
+                        self.termination -= 1        
                 else:
                     # Date récentes : on attend
-                    self.logs[i] += "\n"
+                    logs[i] += "\n"
+        return logs
         
         
 class LogFile:

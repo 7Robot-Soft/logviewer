@@ -119,6 +119,15 @@ class Ui_MainWindow(object):
         
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+        
+    @QtCore.pyqtSlot()
+    def appendLogs(self, logs):
+        #print("update")
+        for i in range(len(logs)):
+            self.textEdits[i].insertPlainText(logs[i])
+            self.textEdits[i].repaint()
+
+
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
 
