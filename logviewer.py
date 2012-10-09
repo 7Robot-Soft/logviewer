@@ -23,18 +23,19 @@ class ThreadedLogAnalyser(QtCore.QThread):
         self.parent = parent
         
     def run(self):
+        delta = 3
         locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))
-        prevTime = 0
+        prevTime = time() - delta+0.2
         cumulatedLogs = self.logAnalyser.analyseStep()
         while self.logAnalyser.termination > 0:
             logs = self.logAnalyser.analyseStep()
-            self.usleep(200)
             for i in range(len(cumulatedLogs)):
                 cumulatedLogs[i] += logs[i]
-            if time() - prevTime > 0.5:
+            if time() - prevTime > delta:
                 prevTime = time()
                 self.emit(QtCore.SIGNAL("appendLogs"), cumulatedLogs)
                 cumulatedLogs = self.logAnalyser.analyseStep()
+            self.usleep(500)
         self.emit(QtCore.SIGNAL("appendLogs"), cumulatedLogs)
         print("File loaded")
 
