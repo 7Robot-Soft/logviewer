@@ -73,9 +73,10 @@ class LogFile:
         self.EOF = False
         self.event = Event()
         self.event.clear()
-        self._channel = Channel(self._fd.buffer, self.infosParser, proto, True)
+        self._channel = Channel(self._fd.buffer, self.infosParser, proto=proto, genAll=True)
         self.event.wait()
         self.readNext()
+
         
     def infosParser(self, name, infos):
         try:
