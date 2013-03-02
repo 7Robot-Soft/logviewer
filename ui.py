@@ -24,18 +24,48 @@ class HighlightingRule():
 
 class MyHighlighter( QtGui.QSyntaxHighlighter ):
     def __init__( self, parent):
-      super(self.__class__,self).__init__( parent )
-      self.parent = parent
-      self.highlightingRules = []
+        super(self.__class__,self).__init__( parent )
+        self.parent = parent
+        self.highlightingRules = []
 
-      keyword = QtGui.QTextCharFormat()
-      keyword.setForeground( QtCore.Qt.darkBlue )
-      keyword.setFontWeight( QtGui.QFont.Bold )
-      keywords = [ "root", "DONE"]
-      for word in keywords:
-        pattern = QtCore.QRegExp("\\b" + word + "\\b")
-        rule = HighlightingRule( pattern, keyword )
-        self.highlightingRules.append( rule )
+        keyword_style = QtGui.QTextCharFormat()
+        keyword_style.setForeground( QtCore.Qt.darkBlue )
+        keywords = [ "id"]
+        for word in keywords:
+            pattern = QtCore.QRegExp("\\b" + word + "\\b")
+            rule = HighlightingRule( pattern, keyword_style )
+            self.highlightingRules.append( rule )
+
+        date_style = QtGui.QTextCharFormat()
+        date_style.setForeground( QtCore.Qt.darkGray )
+        self.highlightingRules.append(HighlightingRule( QtCore.QRegExp("^\d+:\d+.\d+\s"), date_style ))
+        
+        name_style = QtGui.QTextCharFormat()
+        name_style.setForeground( QtCore.Qt.darkGreen )
+        name_style.setFontWeight( QtGui.QFont.Bold )
+        self.highlightingRules.append(HighlightingRule( QtCore.QRegExp("\[\w*\]"), name_style ))
+
+        bracket_style = QtGui.QTextCharFormat()
+        bracket_style.setForeground( QtCore.Qt.red )
+        bracket_style.setFontWeight( QtGui.QFont.Bold )
+        self.highlightingRules.append(HighlightingRule( QtCore.QRegExp("\["), bracket_style ))
+        self.highlightingRules.append(HighlightingRule( QtCore.QRegExp("\]"), bracket_style ))
+        
+        coma_style = QtGui.QTextCharFormat()
+        coma_style.setForeground( QtCore.Qt.blue )
+        self.highlightingRules.append(HighlightingRule( QtCore.QRegExp(":"), coma_style ))
+        
+        parenthesis_style = QtGui.QTextCharFormat()
+        parenthesis_style.setForeground( QtCore.Qt.darkGray )
+        parenthesis_style.setFontWeight( QtGui.QFont.Bold )
+        self.highlightingRules.append(HighlightingRule( QtCore.QRegExp("\("), parenthesis_style ))
+        self.highlightingRules.append(HighlightingRule( QtCore.QRegExp("\)"), parenthesis_style ))
+        
+        
+        
+        
+        
+
         
       
     def highlightBlock(self, text):

@@ -55,13 +55,15 @@ class MyForm(QtGui.QMainWindow):
         
 
 if __name__ == "__main__":
+    print('Usage: [lloffile1@semantic1] [logfile2@semantic1] …', file=sys.stderr)
     if len(sys.argv) == 1:
         sys.stderr.write("""Logviewer needs one or more arguments : 
         the filenames of the logs you want to read simulataneously\n""")
         sys.exit(-1)
     logs = []
     for arg in sys.argv[1:]:
-        logs.append(LogFile(arg, lineParser))
+        file_sem = arg.split("@")
+        logs.append(LogFile(file_sem[0], file_sem[1].capitalize()))
     logAnalyser = LogAnalyser(logs)
     
     
