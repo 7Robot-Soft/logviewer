@@ -44,19 +44,14 @@ class LogAnalyser:
         if self.termination > 0:
             ditems = [f.currentEntry.date for f in self.files]
             # on pick up les entrées qui ont les dates les plus anciennes
-            print("ditems", ditems)
             nexts = minima(ditems)
-            print ("nexts", nexts)
             for i in range(len(self.files)):
                 if i in nexts:
-                    print("file", i)
                     # Dates anciennes : on les ajoute
                     logs[i] += self.files[i].currentEntry.__str__() + "\n"
-                    print(logs[i])
                     self.files[i].readNext()
                     if self.files[i].currentEntry.infos == None:
                         self.termination -= 1  
-                        print("term", self.termination)      
                 else:
                     # Date récentes : on attend
                     logs[i] += "\n"
@@ -79,24 +74,30 @@ class LogFile:
 
         
     def infosParser(self, name, infos):
-        try:
-            date = datetime.fromtimestamp(infos["timestamp"]+infos["milli"]/1e6)
-        except ValueError as errmsg:
-            date = datetime(1970, 1, 1)
-            sys.stderr.write("Failed to parse the date in the line %s.\nDetails: %s\n" % (line, errmsg))
-        del infos["timestamp"]
-        del infos["milli"]
-        self._entries.append(LogEntry(name, date, infos))
+        if name==None:
+            self._entries.append(LogEntry(""))
+        else:
+            try:
+                date = datetime.fromtimestamp(infos["timestamp"]+infos["milli"]/1e6)
+            except ValueError as errmsg:
+                date = datetime(1970, 1, 1)
+                sys.stderr.write("Failed to parse the date in the line %s.\nDetails: %s\n" % (line, errmsg))
+            del infos["timestamp"]
+            del infos["milli"]
+            self._entries.append(LogEntry(name, date, infos))
         self.event.set() # release the constructor
         
     def readNext(self):
         # TODO : wait until self._index is not out of range
-        #print(self._index)
         if not self.EOF:
             self.currentEntry = self._entries[self._index]
+            if self.currentEntry.name == None:
+                self.EOF = True
+                self.currentEntry.infos = None
             self._index += 1
             if self._index >= len(self._entries):
-                self.EOF = True
+                # Low probability to enter this case, untested
+                self.event.wait() # We will be woke up at the next call of the callback "infosParser"
         else:
             self.currentEntry = LogEntry("")
         
