@@ -63,7 +63,7 @@ if __name__ == "__main__":
     logs = []
     for arg in sys.argv[1:]:
         file_sem = arg.split("@")
-        logs.append(LogFile(file_sem[0], file_sem[1].capitalize()))
+        logs.append(LogFile(file_sem[0], file_sem[1]))
     logAnalyser = LogAnalyser(logs)
     
     
