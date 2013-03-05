@@ -7,11 +7,11 @@ from threading import Event
 
 # sinon, une fois dans pyQT, May n'est plus parsé par strptime
 
-sys.path.append("../atp")
+sys.path.append("atp")
 from channel import Channel
 
 
-def minima(items):
+def argsmin(items):
     '''Renvoie les indexs des minima d'une liste'''
     imini = [0]
     mini  = items[0]  
@@ -44,7 +44,7 @@ class LogAnalyser:
         if self.termination > 0:
             ditems = [f.currentEntry.date for f in self.files]
             # on pick up les entrées qui ont les dates les plus anciennes
-            nexts = minima(ditems)
+            nexts = argsmin(ditems)
             for i in range(len(self.files)):
                 if i in nexts:
                     # Dates anciennes : on les ajoute
