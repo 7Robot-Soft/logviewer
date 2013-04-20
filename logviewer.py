@@ -1,75 +1,80 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
-
-# Pour les problèmes de compatibilité Python 2 - 3 voir
-# http://stackoverflow.com/questions/8307985/incompatibility-between-python-3-2-and-qt
-
-# http://joplaete.wordpress.com/2010/07/21/threading-with-pyqt4/
-
-# TODO: si l'utilisateur s'scrollait en bas pdt le chargement, il reste scrollé en bas qd la suite du texte se charge
-
+import argparse
 import sys
+import os
+import socket
+
 from PyQt4 import QtCore, QtGui
-from time import time, sleep
+from gui import Gui
 
-from loganalyser import *
-from ui import Ui_MainWindow
+from settings import DEFAULT_ANALYZER, DEFAULT_ANALYZER_ARGS
+import re
 
-class ThreadedLogAnalyser(QtCore.QThread):
-    def __init__(self, parent, logAnalalyser):
-        QtCore.QThread.__init__(self, parent)
-        self.logAnalyser = logAnalyser
-        self.parent = parent
-        
-    def run(self):
-        delta = 3
-        locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))
-        prevTime = time() - delta+0.2
-        cumulatedLogs = self.logAnalyser.analyseStep()
-        while self.logAnalyser.termination > 0:
-            logs = self.logAnalyser.analyseStep()
-            for i in range(len(cumulatedLogs)):
-                cumulatedLogs[i] += logs[i]
-            if time() - prevTime > delta:
-                prevTime = time()
-                self.emit(QtCore.SIGNAL("appendLogs"), cumulatedLogs)
-                cumulatedLogs = self.logAnalyser.analyseStep()
-            self.usleep(500)
-        self.emit(QtCore.SIGNAL("appendLogs"), cumulatedLogs)
-        print("File loaded")
+class LogViewer(QtGui.QMainWindow):
 
-class MyForm(QtGui.QMainWindow):
-    def __init__(self, logAnalyser, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self, len(logAnalyser.files))
-        self.logAnalyser = logAnalyser
-        self.threadLogAnalyser =  ThreadedLogAnalyser(self, self.logAnalyser)
-        self.connect(self.threadLogAnalyser, QtCore.SIGNAL("appendLogs"), self.ui.appendLogs)
+    def __init__(self, args):
+        super().__init__()
 
-    
-        
-    def main(self):
-        self.threadLogAnalyser.start()
-        
+        analyzers = dict()
+
+        self.analyzers = []
+        self.files = []
+        self.indices = []
+
+        self.gui = Gui()
+        self.gui.initGui(self)
+        self.gui.addEditors(len(args))
+
+        for i in range(len(args)):
+            arg = args[i]
+            arg = arg.split('@')
+            input = arg[0]
+
+            hostname = re.compile("^(?=.{1,255}$)[0-9A-Za-z](?:(?:[0-9A-Za-z]|-){0,61}[0-9A-Za-z])?(?:\.[0-9A-Za-z](?:(?:[0-9A-Za-z]|-){0,61}[0-9A-Za-z])?)*\.?:[0-9]+$", re.IGNORECASE)
+            if hostname.match(input):
+                host, port = input.split(':')
+                port = int(port)
+                sock = socket.socket()
+                sock.connect((host, port))
+                self.files += [sock.makefile(mode="r")]
+            else:
+                self.files += [open(input, mode="r")]
+
+
+            if len(arg) > 1:
+                analyzer_name = arg[1]
+            else:
+                analyzer_name = DEFAULT_ANALYZER
+            if len(arg) > 2:
+                arg = '@'.join(arg[2:])
+            else:
+                arg = DEFAULT_ANALYZER_ARGS
+
+            print("Analyzing %s by %s(%s)" %(input, analyzer_name, arg))
+
+            if not analyzer_name in analyzers:
+                package_name = "analyzers."+analyzer_name.lower()
+                class_name = analyzer_name.capitalize()+"Analyzer"
+                analyzers[analyzer_name] = getattr(__import__(package_name, fromlist=[class_name]), class_name)
+
+            self.analyzers += [analyzers[analyzer_name](self.files[i].buffer, lambda time, value, i=i: self.callback(i, time, value), arg)]
+
+        self.show()
+        self.gui.start()
+
+    def callback(self, dest, time, value):
+        from datetime import datetime
+        if time == None:
+            time = datetime.today()
+        self.gui.insert([(dest, time, value)])
+
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print('Usage: logfile1@semantic1 [logfile2@semantic1] …', file=sys.stderr)
-        sys.exit(0)
+    parser = argparse.ArgumentParser(description='Show synchronized logs in unified gui')
+    parser.add_argument("inputs", metavar='INPUT', nargs='+', help="Set an input (file or socket) and optionaly specify analyzer to use after an '@'. You can also pass extra arguments to analyzer after an other '@' (ex: localhost:1234@atp@proto)")
+    args = parser.parse_args()
 
-    logs = []
-    for arg in sys.argv[1:]:
-        file_sem = arg.split("@")
-        logs.append(LogFile(file_sem[0], file_sem[1]))
-    logAnalyser = LogAnalyser(logs)
-    
-    
-    app   = QtGui.QApplication(sys.argv)
-    myapp = MyForm(logAnalyser)
-    
-    myapp.show()
-    myapp.main()
-    
-    sys.exit(app.exec_())
+    app = QtGui.QApplication(sys.argv)
+    gui = LogViewer(args.inputs)
+    os._exit(app.exec_())
