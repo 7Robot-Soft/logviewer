@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 class AtpAnalyzer(Analyzer):
     def __init__(self, buffer, callback, arg):
         super().__init__(callback)
-        channel = Channel(buffer, self.callback, proto = arg, follow = True, genAll = True)
+        channel = Channel(buffer, self.callback, proto = arg, follow = True, transmitter = 'both')
 
     def callback(self, name, args):
         time = None
