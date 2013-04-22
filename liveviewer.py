@@ -31,8 +31,6 @@ if __name__ == '__main__':
     inputs = []
 
     for proto in protos:
-        print(proto)
-        print(protos[proto]["id"])
         port = base_port + protos[proto]["id"]
         inputs.append("%s:%d@atp@%s" %(host, port, proto))
 
