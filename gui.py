@@ -120,9 +120,11 @@ class Gui(QtCore.QThread):
         self.lock.acquire()
         if self.update:
             self.update = False
+            scroll = self.editors[0].verticalScrollBar().value()
             for i in range(len(self.editors)):
                 self.editors[i].setPlainText('\n'.join(self.contents[i]))
                 self.editors[i].repaint()
+                self.editors[i].verticalScrollBar().setValue(scroll)
         self.lock.release()
 
     def run(self):
