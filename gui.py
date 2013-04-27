@@ -1,5 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from threading import Lock
+from queue import Queue
+from datetime import datetime
 
 class HighlightingRule():
   def __init__( self, pattern, format ):
@@ -69,7 +71,9 @@ class Gui(QtCore.QThread):
         self.editors = []
         self.lock = Lock()
         self.times = []
+        self.positions = []
         self.contents = []
+        self.queue = Queue()
         self.update = False
 
         # Splitter
@@ -96,36 +100,59 @@ class Gui(QtCore.QThread):
                 editor.bindTextArea(e)
             self.editors.append(editor)
             self.contents.append([])
+            self.positions.append([])
         self.lock.release()
 
-    def insert(self, values):
-        self.lock.acquire()
-        for i, time, value in values:
-            pos = len(self.times)
-            for j in range(pos):
-                if self.times[j] > time:
-                    pos = j
-                    break
-            self.times.insert(pos, time)
-            for k in range(len(self.contents)):
-                if k != i:
-                    self.contents[k].insert(pos, '')
-                else:
-                    self.contents[i].insert(pos, time.strftime('%M:%S.%f') + ' : ' + value)
-        self.update = True
-        self.lock.release()
-    
+    def add(self, i, time, value):
+
+        if time == None:
+            time = datetime.today()
+
+        self.queue.put((i, time, value))
+
     @QtCore.pyqtSlot()
     def refresh(self):
-        self.lock.acquire()
-        if self.update:
-            self.update = False
-            scroll = self.editors[0].verticalScrollBar().value()
-            for i in range(len(self.editors)):
-                self.editors[i].setPlainText('\n'.join(self.contents[i]))
-                self.editors[i].repaint()
-                self.editors[i].verticalScrollBar().setValue(scroll)
-        self.lock.release()
+
+        if not self.queue.empty():
+
+            e = self.editors[0]
+
+            scrollMax = e.verticalScrollBar().maximum() == e.verticalScrollBar().value()
+
+            while not self.queue.empty():
+
+                i, time, value = self.queue.get()
+
+                pos = len(self.times)
+                for j in range(pos):
+                    if self.times[j] > time:
+                        pos = j
+                        break
+                self.times.insert(pos, time)
+
+                for k in range(len(self.editors)):
+                    if k != i:
+                        self.contents[k].insert(pos, '\n')
+                        self.positions[k].insert(pos, 1)
+                        self.insert(k, pos, '\n')
+                    else:
+                        timedvalue = time.strftime('%M:%S.%f') + ' : ' + value + '\n'
+                        self.contents[i].insert(pos, timedvalue)
+                        self.positions[k].insert(pos, len(timedvalue))
+                        self.insert(k, pos, timedvalue)
+
+            if scrollMax:
+                for e in self.editors:
+                    e.verticalScrollBar().setValue(e.verticalScrollBar().maximum())
+
+    def insert(self, i, pos, value):
+            e = self.editors[i]
+            c = e.textCursor()
+            cursorPos = 0
+            for j in range(pos):
+                cursorPos += len(self.contents[i][j])
+            c.setPosition(cursorPos)
+            c.insertText(value)
 
     def run(self):
         while True:

@@ -58,16 +58,10 @@ class LogViewer(QtGui.QMainWindow):
                 class_name = analyzer_name.capitalize()+"Analyzer"
                 analyzers[analyzer_name] = getattr(__import__(package_name, fromlist=[class_name]), class_name)
 
-            self.analyzers += [analyzers[analyzer_name](self.files[i].buffer, lambda time, value, i=i: self.callback(i, time, value), arg)]
+            self.analyzers += [analyzers[analyzer_name](self.files[i].buffer, lambda time, value, i=i: self.gui.add(i, time, value), arg)]
 
         self.show()
         self.gui.start()
-
-    def callback(self, dest, time, value):
-        from datetime import datetime
-        if time == None:
-            time = datetime.today()
-        self.gui.insert([(dest, time, value)])
 
 
 if __name__ == "__main__":
