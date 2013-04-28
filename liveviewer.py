@@ -30,6 +30,9 @@ if __name__ == '__main__':
 
     inputs = []
 
+    inputs.append("%s:%d@ia" %(host, base_port-1))
+    inputs.append("%s:%d@ia" %(host, base_port))
+
     for proto in protos:
         port = base_port + protos[proto]["id"]
         inputs.append("%s:%d@atp@%s" %(host, port, proto))

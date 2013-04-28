@@ -83,8 +83,8 @@ class Gui(QtCore.QThread):
         MainWindow.setCentralWidget(self.splitter)
 
         # Status bar
-        self.statusBar = QtGui.QStatusBar(MainWindow)
-        MainWindow.setStatusBar(self.statusBar)
+        #self.statusBar = QtGui.QStatusBar(MainWindow)
+        #MainWindow.setStatusBar(self.statusBar)
 
         self.connect(self, QtCore.SIGNAL("refresh"), self.refresh)
 
@@ -94,6 +94,7 @@ class Gui(QtCore.QThread):
             editor = TextArea(self.splitter)
             editor.setLineWrapMode(QtGui.QTextEdit.NoWrap)
             editor.setReadOnly(True)
+            editor.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
             highlighter = MyHighlighter(editor)
             for e in self.editors:
                 e.bindTextArea(editor)
