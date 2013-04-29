@@ -1,7 +1,8 @@
 from PyQt4 import QtCore, QtGui
 from threading import Lock
 from queue import Queue
-from datetime import datetime
+from datetime import datetime, timedelta
+from settings import DATE_FORMAT, DURATION_FORMAT
 
 class HighlightingRule():
   def __init__( self, pattern, format ):
@@ -59,8 +60,19 @@ class MyHighlighter( QtGui.QSyntaxHighlighter ):
 
 class Gui(QtCore.QThread):
 
-    def __init__(self, parent = None):
+    def __init__(self, parent = None, **kwargs):
         QtCore.QThread.__init__(self, parent)
+        self.after = None
+        self.before = None
+        for arg in kwargs:
+            if arg == "after" and kwargs[arg] != None:
+                self.after = datetime.strptime(kwargs[arg], DATE_FORMAT)
+            elif arg == "before" and kwargs[arg] != None:
+                self.before = datetime.strptime(kwargs[arg], DATE_FORMAT)
+            elif arg == "since" and kwargs[arg] != None:
+                t = datetime.strptime(kwargs[arg], DURATION_FORMAT)
+                delta = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+                self.after = datetime.today() - delta
 
     def initGui(self, MainWindow):
 
@@ -108,6 +120,11 @@ class Gui(QtCore.QThread):
 
         if time == None:
             time = datetime.today()
+
+        if self.before and time > self.before:
+            return
+        elif self.after and time < self.after:
+            return
 
         self.queue.put((i, time, value))
 

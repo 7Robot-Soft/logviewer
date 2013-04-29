@@ -13,7 +13,7 @@ import re
 
 class LogViewer(QtGui.QMainWindow):
 
-    def __init__(self, args):
+    def __init__(self, args, **kwargs):
         super().__init__()
 
         analyzers = dict()
@@ -22,7 +22,7 @@ class LogViewer(QtGui.QMainWindow):
         self.files = []
         self.indices = []
 
-        self.gui = Gui()
+        self.gui = Gui(**kwargs)
         self.gui.initGui(self)
         self.gui.addEditors(len(args))
 
@@ -65,10 +65,14 @@ class LogViewer(QtGui.QMainWindow):
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(description='Show synchronized logs in unified gui')
     parser.add_argument("inputs", metavar='INPUT', nargs='+', help="Set an input (file or socket) and optionaly specify analyzer to use after an '@'. You can also pass extra arguments to analyzer after an other '@' (ex: localhost:1234@atp@proto)")
+    parser.add_argument("-a", "--after", dest="after", help="Keep only messages after specified time.")
+    parser.add_argument("-b", "--before", dest="before", help="Keep only messages before specified time.")
+    parser.add_argument("-s", "--since", dest="since", help="Keep only messages sended since last elapsed time.")
     args = parser.parse_args()
 
     app = QtGui.QApplication(sys.argv)
-    gui = LogViewer(args.inputs)
+    gui = LogViewer(args.inputs, after=args.after, before=args.before, since=args.since)
     os._exit(app.exec_())
