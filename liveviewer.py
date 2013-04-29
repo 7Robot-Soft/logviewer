@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     inputs = []
 
-    inputs.append("%s:%d@ia" %(host, base_port-1))
+    inputs.append("%s:%d@ia" %("localhost", base_port-1))
     inputs.append("%s:%d@ia" %(host, base_port))
 
     for proto in protos:
